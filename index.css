@@ -636,7 +636,7 @@ body:not(.user-is-tabbing) a:focus {
   width: auto;
   margin-top: -22px;
   padding: 16px;
-  color: white;
+  color: rgb(255, 0, 0);
   font-weight: bold;
   font-size: 18px;
   transition: 0.6s ease;
@@ -652,8 +652,8 @@ body:not(.user-is-tabbing) a:focus {
 
 /* On hover, add a black background color with a little bit see-through */
 .prev:hover, .next:hover {
-  background-color: rgba(0,0,0,0.8);
-}
+    background-color: rgba(0,0,0,0.8);
+  }
 
 /* Caption text */
 .text {
