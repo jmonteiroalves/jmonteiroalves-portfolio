@@ -1,74 +1,66 @@
-/* -----------------------------------------
-  Have focus outline only for keyboard users 
- ---------------------------------------- */
+/* Screenshot viewers: swap the active image without a page reload. */
+const viewers = document.querySelectorAll('[data-shot]');
 
-const handleFirstTab = (e) => {
-  if(e.key === 'Tab') {
-    document.body.classList.add('user-is-tabbing')
+viewers.forEach((viewer) => {
+  const tabs = Array.from(viewer.querySelectorAll('.shot__tab'));
+  const image = viewer.querySelector('.shot__image');
+  const note = viewer.querySelector('.shot__note');
+  const count = viewer.querySelector('.shot__count');
 
-    window.removeEventListener('keydown', handleFirstTab)
-    window.addEventListener('mousedown', handleMouseDownOnce)
-  }
+  if (!tabs.length || !image || !note) return;
 
-}
+  const select = (tab) => {
+    tabs.forEach((item) => item.setAttribute('aria-pressed', String(item === tab)));
+    image.src = tab.dataset.src;
+    image.alt = tab.dataset.alt;
+    note.textContent = tab.dataset.note;
+    if (count) count.textContent = `${tabs.indexOf(tab) + 1} / ${tabs.length}`;
+  };
 
-const handleMouseDownOnce = () => {
-  document.body.classList.remove('user-is-tabbing')
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => select(tab));
+  });
 
-  window.removeEventListener('mousedown', handleMouseDownOnce)
-  window.addEventListener('keydown', handleFirstTab)
-}
+  viewer.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 
-window.addEventListener('keydown', handleFirstTab)
+    const current = tabs.findIndex((tab) => tab.getAttribute('aria-pressed') === 'true');
+    if (current === -1) return;
 
-const backToTopButton = document.querySelector(".back-to-top");
-let isBackToTopRendered = false;
-
-let alterStyles = (isBackToTopRendered) => {
-  backToTopButton.style.visibility = isBackToTopRendered ? "visible" : "hidden";
-  backToTopButton.style.opacity = isBackToTopRendered ? 1 : 0;
-  backToTopButton.style.transform = isBackToTopRendered
-    ? "scale(1)"
-    : "scale(0)";
-};
-
-window.addEventListener("scroll", () => {
-  if (window.scrollY > 700) {
-    isBackToTopRendered = true;
-    alterStyles(isBackToTopRendered);
-  } else {
-    isBackToTopRendered = false;
-    alterStyles(isBackToTopRendered);
-  }
+    event.preventDefault();
+    const offset = event.key === 'ArrowRight' ? 1 : -1;
+    const next = tabs[(current + offset + tabs.length) % tabs.length];
+    next.focus();
+    select(next);
+  });
 });
 
-/* -----------------------------------------
-  Having slideshow working
- ---------------------------------------- */
-/* Class the members of each slideshow group with different CSS classes */
-let slideIndex = [1,1,1];
-let slideId = ["mySlides1", "mySlides2","mySlides3"]
-showSlides(1, 0);
-showSlides(1, 1);
-showSlides(1, 2);
+/* Reveal the back-to-top control after the first screen. */
+const toTop = document.querySelector('.to-top');
 
-// Next/previous controls
-function plusSlides(n, no) {
-  showSlides(slideIndex[no] += n, no);
+if (toTop) {
+  const updateToTop = () => {
+    toTop.classList.toggle('is-visible', window.scrollY > 640);
+  };
+
+  updateToTop();
+  window.addEventListener('scroll', updateToTop, { passive: true });
 }
 
-// Thumbnail image controls
-function currentSlide(n) {
-  showSlides(slideIndex = n);
-}
+/* Keep the copyright year current. */
+const year = document.getElementById('year');
+if (year) year.textContent = new Date().getFullYear();
 
-function showSlides(n, no) {
-  let i;
-  let x = document.getElementsByClassName(slideId[no]);
-  if (n > x.length) {slideIndex[no] = 1}
-  if (n < 1) {slideIndex[no] = x.length}
-  for (i = 0; i < x.length; i++) {
-    x[i].style.display = "none";
-  }
-  x[slideIndex[no]-1].style.display = "block";
-} 
+/* Warm the cache for the alternate screenshots after first paint. */
+const preloadScreens = () => {
+  document.querySelectorAll('.shot__tab').forEach((tab) => {
+    const image = new Image();
+    image.src = tab.dataset.src;
+  });
+};
+
+if ('requestIdleCallback' in window) {
+  window.requestIdleCallback(preloadScreens, { timeout: 3000 });
+} else {
+  window.setTimeout(preloadScreens, 2000);
+}
